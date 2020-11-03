@@ -11,7 +11,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     match parse_password_rules(&password_rules, true) {
         Ok(parsed_rules) => println!("Parsed rules: {:#?}", parsed_rules),
-        Err(e) => println!("{}\n", e.to_string_pretty(&password_rules)),
+        Err(e) => println!("{}\n", e.to_string_pretty(&password_rules)?),
     }
 
     Ok(())

@@ -214,10 +214,10 @@ impl PasswordRulesError {
     /// 1 | minlength: 8; maxlength: 32; required: lower, upper; required: digit; allow
     ///   |                                                                       ^ expected one of "required", "allowed", "max-consecutive", "minlength", "maxlength", or EoF
     /// ```
-    pub fn to_string_pretty(&self, s: &str) -> String {
+    pub fn to_string_pretty(&self, s: &str) -> Result<String, fmt::Error> {
         let lint_base = PrettyLint::error(s).with_message("parsing failed");
 
-        match self.expectations.as_slice() {
+        Ok(match self.expectations.as_slice() {
             [] => lint_base.with_inline_message("unknown error").to_string(),
             [exp] => lint_base
                 .with_inline_message(&format!("expected {}", exp.expected))
@@ -238,7 +238,7 @@ impl PasswordRulesError {
                 let groups = expectations.iter().group_by(|exp| (exp.line, exp.column));
                 let mut lint_string = String::new();
 
-                groups.into_iter().for_each(|((line, column), group)| {
+                groups.into_iter().try_for_each(|((line, column), group)| {
                     let mut inline_message = String::from("expected one of ");
 
                     group
@@ -249,8 +249,7 @@ impl PasswordRulesError {
                                 write!(inline_message, "{}, ", exp.expected)
                             }
                             Last(exp) => write!(inline_message, "or {}", exp.expected),
-                        })
-                        .unwrap();
+                        })?;
 
                     let lint = PrettyLint::error(s)
                         .with_message("parsing failed")
@@ -266,12 +265,12 @@ impl PasswordRulesError {
                             },
                         });
 
-                    write!(lint_string, "{}", lint).unwrap();
-                });
+                    write!(lint_string, "{}", lint)
+                })?;
 
                 lint_string
             }
-        }
+        })
     }
 }
 
