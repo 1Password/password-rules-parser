@@ -83,9 +83,6 @@
 //! [apple_docs]: https://developer.apple.com/password-rules/
 //! [whatwg_proposal]: https://github.com/whatwg/html/issues/3518
 
-#![deny(warnings)]
-#![deny(missing_docs)]
-#![forbid(unused_must_use)]
 #![forbid(unsafe_code)]
 
 pub mod error;
