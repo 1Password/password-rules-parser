@@ -13,3 +13,7 @@ license = "MIT OR Apache-2.0"
 itertools = "0.9"
 nom = "5"
 pretty-lint = "0.1"
+
+[dev-dependencies]
+dialoguer = "0.7"
+anyhow = "1.0"
