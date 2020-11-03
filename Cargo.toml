@@ -1,0 +1,15 @@
+[package]
+name = "password-rules-parser"
+version = "0.1.0"
+authors = ["1Password"]
+description = "Parser for the HTML passwordrules attribute"
+keywords = ["passwords", "parsers", "passwordrules", "apple", "1password"]
+categories = ["parser-implementations", "wasm", "web-programming"]
+repository = "https://github.com/1Password/password-rules-parser"
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+itertools = "0.9"
+nom = "5"
+pretty-lint = "0.1"
