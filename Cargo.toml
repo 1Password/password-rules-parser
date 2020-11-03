@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 itertools = "0.9"
-nom = "5"
+nom = "6"
 pretty-lint = "0.1"
 
 [dev-dependencies]
