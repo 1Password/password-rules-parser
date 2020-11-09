@@ -4,7 +4,7 @@ Notable `password-rules-parser` changes, tracked in the [keep a changelog](https
 
 ## [Unreleased]
 
-## [1.0.0] - 2020-11-03
+## [1.0.0] - 2020-11-09
 
 Initial release.
 
