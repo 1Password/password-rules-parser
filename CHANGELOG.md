@@ -4,6 +4,10 @@ Notable `password-rules-parser` changes, tracked in the [keep a changelog](https
 
 ## [Unreleased]
 
+### Changed
+
+* Updated `nom` from v5 to v6
+
 ## [1.0.0] - 2020-11-09
 
 Initial release.

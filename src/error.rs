@@ -4,7 +4,7 @@ use std::fmt::{self, Display, Formatter, Write};
 use std::{convert::TryInto, error::Error};
 
 use itertools::{Itertools, Position::*};
-use nom::error::{ErrorKind, ParseError};
+use nom::error::{ErrorKind, FromExternalError, ParseError};
 use pretty_lint::{Position, PrettyLint, Span};
 
 /// Extension trait for nom::error::ParseError that allows for collecting the
@@ -175,6 +175,12 @@ impl<'a> WithTagError<&'a str> for PasswordRulesErrorContext<'a> {
                 expected: Expected::Tag(tag),
             }],
         }
+    }
+}
+
+impl<'a> FromExternalError<&'a str, std::num::ParseIntError> for PasswordRulesErrorContext<'a> {
+    fn from_external_error(input: &'a str, kind: ErrorKind, _: std::num::ParseIntError) -> Self {
+        Self::from_error_kind(input, kind)
     }
 }
 

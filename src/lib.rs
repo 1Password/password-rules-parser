@@ -88,6 +88,7 @@
 pub mod error;
 
 use crate::error::{PasswordRulesError, PasswordRulesErrorContext};
+use nom::error::FromExternalError;
 use nom::{
     self,
     branch::alt,
@@ -178,9 +179,9 @@ enum PasswordRule {
 
 /// Wrap a parser such that it accepts any amount (including 0) whitespace
 /// before and after itself.
-fn space_surround<'a, P, O, E>(parser: P) -> impl Fn(&'a str) -> IResult<&'a str, O, E>
+fn space_surround<'a, P, O, E>(parser: P) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
 where
-    P: Fn(&'a str) -> IResult<&'a str, O, E>,
+    P: FnMut(&'a str) -> IResult<&'a str, O, E>,
     E: ParseError<&'a str>,
 {
     delimited(multispace0, parser, multispace0)
@@ -200,23 +201,23 @@ where
 /// finished and parsing can continue. By adding a lookahead for the terminator, we can return that
 /// error if the loop finished without the presence of the expected terminator.
 fn fold_separated_terminated<P, S, R, F, T, I, O, O2, O3, E>(
-    parser: P,
-    sep: S,
+    mut parser: P,
+    mut sep: S,
     terminator: R,
     allow_trailing_separator: bool,
     init: T,
-    fold: F,
-) -> impl Fn(I) -> IResult<I, T, E>
+    mut fold: F,
+) -> impl FnMut(I) -> IResult<I, T, E>
 where
-    P: Fn(I) -> IResult<I, O, E>,
-    S: Fn(I) -> IResult<I, O2, E>,
-    R: Fn(I) -> IResult<I, O3, E>,
+    P: FnMut(I) -> IResult<I, O, E>,
+    S: FnMut(I) -> IResult<I, O2, E>,
+    R: FnMut(I) -> IResult<I, O3, E>,
     I: Clone,
     T: Clone,
-    F: Fn(T, O) -> T,
+    F: FnMut(T, O) -> T,
     E: ParseError<I>,
 {
-    let terminator_lookahead = peek(terminator);
+    let mut terminator_lookahead = peek(terminator);
 
     move |mut input| {
         let mut accum = init.clone();
@@ -269,16 +270,16 @@ where
 /// parsing can continue. By adding a lookahead for the terminator, we can return that error if the
 /// optional was absent without the presence of the expected terminator.
 fn opt_terminated<P, R, I, O, O2, E>(
-    parser: P,
+    mut parser: P,
     terminator: R,
-) -> impl Fn(I) -> IResult<I, Option<O>, E>
+) -> impl FnMut(I) -> IResult<I, Option<O>, E>
 where
-    P: Fn(I) -> IResult<I, O, E>,
-    R: Fn(I) -> IResult<I, O2, E>,
+    P: FnMut(I) -> IResult<I, O, E>,
+    R: FnMut(I) -> IResult<I, O2, E>,
     E: ParseError<I>,
     I: Clone,
 {
-    let terminator_lookahead = peek(terminator);
+    let mut terminator_lookahead = peek(terminator);
 
     move |input| match parser(input.clone()) {
         Ok((tail, value)) => Ok((tail, Some(value))),
@@ -307,7 +308,7 @@ where
 
 /// Wrapper for nom::tag_no_case that supports collecting the specific tag into
 /// the error, in the event of a mismatch
-fn tag_no_case<'a, E>(tag: &'static str) -> impl Fn(&'a str) -> IResult<&'a str, &'a str, E>
+fn tag_no_case<'a, E>(tag: &'static str) -> impl FnMut(&'a str) -> IResult<&'a str, &'a str, E>
 where
     E: error::WithTagError<&'a str>,
 {
@@ -398,7 +399,10 @@ fn parse_character_classes<'a>(
 }
 
 /// Parse a number, which is 1 or more consecutive digits
-fn parse_number<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, u32, E> {
+fn parse_number<'a, E>(input: &'a str) -> IResult<&'a str, u32, E>
+where
+    E: ParseError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
+{
     map_res(digit1, str::parse)(input)
 }
 
@@ -409,7 +413,7 @@ fn parse_number<'a, E: ParseError<&'a str>>(input: &'a str) -> IResult<&'a str, 
 fn parse_generic_rule<'a, P, O>(
     name: &'static str,
     parser: P,
-) -> impl Fn(&'a str) -> IResult<&'a str, O, PasswordRulesErrorContext<'a>>
+) -> impl FnMut(&'a str) -> IResult<&'a str, O, PasswordRulesErrorContext<'a>>
 where
     P: Fn(&'a str) -> IResult<&'a str, O, PasswordRulesErrorContext<'a>>,
 {
@@ -421,9 +425,10 @@ where
 /// Parse an optional number. If the number is absent, lookahead that the next thing in the input
 /// is a semicolon or EoF. This construct is used to ensure "expected number" errors can be
 /// correctly delivered to the caller.
-fn parse_optional_rule_number<'a, E: ParseError<&'a str>>(
-    input: &'a str,
-) -> IResult<&'a str, Option<u32>, E> {
+fn parse_optional_rule_number<'a, E>(input: &'a str) -> IResult<&'a str, Option<u32>, E>
+where
+    E: ParseError<&'a str> + FromExternalError<&'a str, std::num::ParseIntError>,
+{
     opt_terminated(
         parse_number,
         space_surround(alt((value((), char(';')), eof))),
@@ -461,7 +466,7 @@ fn parse_rule<'a>(input: &'a str) -> IResult<&'a str, PasswordRule, PasswordRule
 /// If the source option is None, set it to Some(new). Otherwise, call cmp with
 /// the old and new T, and set the option to the return value of cmp. Used to
 /// implement "min of" and "max of" logic with options.
-fn apply<T>(source: &mut Option<T>, new: T, cmp: impl Fn(T, T) -> T) {
+fn apply<T>(source: &mut Option<T>, new: T, mut cmp: impl FnMut(T, T) -> T) {
     *source = match source.take() {
         None => Some(new),
         Some(old) => Some(cmp(old, new)),
@@ -521,7 +526,7 @@ pub fn parse_password_rules(
         return Err(PasswordRulesError::empty());
     }
 
-    let parse_rules = complete(parse_rule_list);
+    let mut parse_rules = complete(parse_rule_list);
 
     let mut rules = match parse_rules(s) {
         Ok((_, rules)) => rules,
