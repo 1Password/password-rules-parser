@@ -1,6 +1,6 @@
 [package]
 name = "password-rules-parser"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["1Password"]
 description = "Parser for the HTML passwordrules attribute"
 keywords = ["passwords", "parsers", "passwordrules", "apple", "1password"]
