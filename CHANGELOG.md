@@ -15,5 +15,5 @@ Notable `password-rules-parser` changes, tracked in the [keep a changelog](https
 Initial release.
 
 [Unreleased]: https://github.com/1Password/password-rules-parser/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/1Password/password-rules-parser/releases/tag/v1.0.0...v1.0.1
+[1.0.1]: https://github.com/1Password/password-rules-parser/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/1Password/password-rules-parser/releases/tag/v1.0.0
