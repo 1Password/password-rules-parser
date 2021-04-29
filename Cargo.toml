@@ -10,10 +10,10 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-itertools = "0.9"
+itertools = "0.10"
 nom = "6"
 pretty-lint = "0.1"
 
 [dev-dependencies]
-dialoguer = "0.7"
+dialoguer = "0.8"
 anyhow = "1.0"

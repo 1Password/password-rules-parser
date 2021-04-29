@@ -3,6 +3,7 @@
 [![crate documentation](https://docs.rs/password-rules-parser/badge.svg)](https://docs.rs/password-rules-parser)
 [![Crates.io version](https://img.shields.io/crates/v/password-rules-parser.svg)](https://crates.io/crates/password-rules-parser)
 [![Crates.io downloads](https://img.shields.io/crates/d/password-rules-parser.svg)](https://crates.io/crates/password-rules-parser)
+[![dependency status](https://deps.rs/repo/github/1Password/password-rules-parser/status.svg)](https://deps.rs/repo/github/1Password/password-rules-parser)
 ![CI](https://github.com/1Password/password-rules-parser/workflows/CI/badge.svg)
 
 Rust parser for the HTML [`passwordrules` attribute](https://github.com/whatwg/html/issues/3518), a proposal for an HTML attribute that allows services to specify their password requirements in a machine-readable format.
