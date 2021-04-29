@@ -361,7 +361,7 @@ fn parse_custom_character_class<'a>(
 // Parse a string that indicates a character class
 fn parse_character_class<'a>(
     input: &'a str,
-) -> IResult<&'a str, CharacterClass, PasswordRulesErrorContext<'a>> {
+) -> IResult<&'a str, CharacterClass, PasswordRulesErrorContext> {
     alt((
         value(CharacterClass::Upper, tag_no_case("upper")),
         value(CharacterClass::Lower, tag_no_case("lower")),
@@ -379,7 +379,7 @@ fn parse_character_class<'a>(
 /// Parse a list of character classes (which are comma-whitespace delimited)
 fn parse_character_classes<'a>(
     input: &'a str,
-) -> IResult<&'a str, Vec<CharacterClass>, PasswordRulesErrorContext<'a>> {
+) -> IResult<&'a str, Vec<CharacterClass>, PasswordRulesErrorContext> {
     let comma = space_surround(char(','));
 
     // A list of character classes must be terminated either by a semicolon or
@@ -438,7 +438,7 @@ where
 /// Parse a single PasswordRule, which is one of the semicolon delimited lines in a passwordrules
 /// document. Because the semicolon is optional, it's handled separately when parsing a sequence
 /// of rules, rather than here as part of a single rule.
-fn parse_rule<'a>(input: &'a str) -> IResult<&'a str, PasswordRule, PasswordRulesErrorContext<'a>> {
+fn parse_rule<'a>(input: &'a str) -> IResult<&'a str, PasswordRule, PasswordRulesErrorContext> {
     alt((
         map(
             parse_generic_rule("required", parse_character_classes),
@@ -479,7 +479,7 @@ fn apply<T>(source: &mut Option<T>, new: T, mut cmp: impl FnMut(T, T) -> T) {
 /// allowed and required are empty, and to canonicalize the allowed set.
 fn parse_rule_list<'a>(
     input: &'a str,
-) -> IResult<&'a str, PasswordRules, PasswordRulesErrorContext<'a>> {
+) -> IResult<&'a str, PasswordRules, PasswordRulesErrorContext> {
     fold_separated_terminated(
         parse_rule,
         space_surround(char(';')),
