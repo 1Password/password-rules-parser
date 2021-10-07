@@ -1,6 +1,6 @@
 [package]
 name = "password-rules-parser"
-version = "1.0.2"
+version = "1.0.3"
 authors = ["1Password"]
 description = "Parser for the HTML passwordrules attribute"
 keywords = ["passwords", "parsers", "passwordrules", "apple", "1password"]
@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 itertools = "0.10"
-nom = "6"
+nom = "7"
 pretty-lint = "0.1"
 
 [dev-dependencies]

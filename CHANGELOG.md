@@ -4,6 +4,12 @@ Notable `password-rules-parser` changes, tracked in the [keep a changelog](https
 
 ## [Unreleased]
 
+## [1.0.3] - 2021-10-7
+
+### Changed
+
+* Updated `nom` from `6` to `7`
+
 ## [1.0.2] - 2021-4-29
 
 ### Changed
@@ -20,7 +26,8 @@ Notable `password-rules-parser` changes, tracked in the [keep a changelog](https
 
 Initial release.
 
-[Unreleased]: https://github.com/1Password/password-rules-parser/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/1Password/password-rules-parser/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/1Password/password-rules-parser/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/1Password/password-rules-parser/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/1Password/password-rules-parser/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/1Password/password-rules-parser/releases/tag/v1.0.0
