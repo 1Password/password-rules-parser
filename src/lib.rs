@@ -99,6 +99,8 @@ use nom::{
     sequence::{delimited, tuple},
     IResult,
 };
+use once_cell::sync::Lazy;
+use std::collections::{BTreeMap, BTreeSet};
 use std::{cmp::max, cmp::min, ops::RangeInclusive};
 
 // FIXME: There's a significant amount of similarity among these different
@@ -172,6 +174,130 @@ enum PasswordRule {
     MinLength(Option<u32>),
     MaxLength(Option<u32>),
     MaxConsecutive(Option<u32>),
+}
+
+impl PasswordRules {
+    pub fn is_subset(&self, other: &PasswordRules) -> bool {
+        if let Some(max_consecutive) = other.max_consecutive {
+            if self.max_consecutive.map(|x| x <= max_consecutive) != Some(true) {
+                return false;
+            }
+        }
+
+        if let Some(min_length) = other.min_length {
+            if self.min_length.map(|x| x >= min_length) != Some(true) {
+                return false;
+            }
+        }
+
+        if let Some(max_length) = other.max_length {
+            if self.max_length.map(|x| x <= max_length) != Some(true) {
+                return false;
+            }
+        }
+
+        if !satisfies_allowed(self, other) {
+            return false;
+        }
+
+        satisfies_required(self.required.clone(), other.required.clone())
+    }
+}
+
+fn satisfies_allowed(a: &PasswordRules, b: &PasswordRules) -> bool {
+    let b_allowed = b
+        .required
+        .iter()
+        .flatten()
+        .chain(b.allowed.iter())
+        .flat_map(|class| class.chars().into_iter())
+        .collect::<BTreeSet<char>>();
+
+    a.required
+        .iter()
+        .flatten()
+        .chain(a.allowed.iter())
+        .map(CharacterSet::from)
+        .all(|set| set.is_subset(&b_allowed))
+}
+
+fn satisfies_required(mut a: Vec<Vec<CharacterClass>>, mut b: Vec<Vec<CharacterClass>>) -> bool {
+    /// Sort by number of classes in each required instance, and by number of characters in each class, low to high
+    fn presort_by_length(sets: &mut [Vec<CharacterClass>]) {
+        for set in sets.iter_mut() {
+            set.sort_by_key(|class| CharacterSet::from(class).len());
+        }
+
+        sets.sort_by_key(|set| {
+            (
+                set.len(),
+                set.last().map(|class| CharacterSet::from(class).len()),
+            )
+        });
+    }
+
+    presort_by_length(&mut a);
+    presort_by_length(&mut b);
+
+    // Is each `x` in `ra` in `a`, a subset of any `y` in `rb` in `b`?
+    // If so, delete `rb` from `b`.
+    a.iter().for_each(|ra| {
+        if let Some(i) = b.iter().enumerate().find_map(|(i, rb)| {
+            ra.iter()
+                .all(|x_class| {
+                    rb.iter().any(|y_class| {
+                        let x_set = CharacterSet::from(x_class);
+                        let y_set = CharacterSet::from(y_class);
+                        x_set.is_subset(&y_set)
+                    })
+                })
+                .then_some(i)
+        }) {
+            b.remove(i);
+        }
+    });
+
+    b.is_empty()
+}
+
+enum CharacterSet<'a> {
+    Static(&'a BTreeSet<char>),
+    Dynamic(BTreeSet<char>),
+}
+
+impl std::ops::Deref for CharacterSet<'_> {
+    type Target = BTreeSet<char>;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            CharacterSet::Static(a) => a,
+            CharacterSet::Dynamic(a) => a,
+        }
+    }
+}
+
+impl<'a> From<&'a CharacterClass> for CharacterSet<'a> {
+    fn from(class: &'a CharacterClass) -> Self {
+        static STATIC_CHARACTER_SETS: Lazy<BTreeMap<CharacterClass, BTreeSet<char>>> =
+            Lazy::new(|| {
+                [
+                    CharacterClass::Upper,
+                    CharacterClass::Lower,
+                    CharacterClass::Digit,
+                    CharacterClass::Special,
+                    CharacterClass::AsciiPrintable,
+                    CharacterClass::Unicode,
+                ]
+                .iter()
+                .map(|c| (c.clone(), c.chars().into_iter().collect::<BTreeSet<_>>()))
+                .collect()
+            });
+
+        match class {
+            CharacterClass::Custom(_) => CharacterSet::Dynamic(class.chars().into_iter().collect()),
+            _ => CharacterSet::Static(STATIC_CHARACTER_SETS.get(class).unwrap()),
+        }
+    }
 }
 
 // HELPER PARSER COMBINATORS
@@ -662,6 +788,86 @@ fn canonicalize(mut classes: Vec<CharacterClass>) -> Vec<CharacterClass> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    mod satisfies_required {
+        use super::*;
+
+        #[test]
+        fn test_satisfies_required() {
+            assert!(satisfies_required(
+                vec![vec![CharacterClass::Digit]],
+                vec![vec![
+                    CharacterClass::Digit,
+                    CharacterClass::Upper,
+                    CharacterClass::Lower,
+                ]],
+            ),);
+
+            assert!(!satisfies_required(
+                vec![vec![
+                    CharacterClass::Digit,
+                    CharacterClass::Upper,
+                    CharacterClass::Lower,
+                ]],
+                vec![vec![CharacterClass::Digit]],
+            ),);
+
+            assert!(satisfies_required(
+                vec![vec![CharacterClass::Digit], vec![CharacterClass::Digit],],
+                vec![
+                    vec![CharacterClass::Digit],
+                    vec![CharacterClass::Digit, CharacterClass::Upper],
+                ],
+            ),);
+
+            assert!(!satisfies_required(
+                vec![
+                    vec![CharacterClass::Custom(vec!['[', '#', '!', '*'])],
+                    vec![CharacterClass::Digit],
+                ],
+                vec![
+                    vec![CharacterClass::Custom(vec!['#', '!'])],
+                    vec![CharacterClass::Digit, CharacterClass::Upper],
+                ],
+            ),);
+
+            assert!(satisfies_required(
+                vec![
+                    vec![CharacterClass::Digit, CharacterClass::Upper],
+                    vec![CharacterClass::Digit],
+                ],
+                vec![vec![CharacterClass::Digit],],
+            ),);
+
+            assert!(!satisfies_required(
+                vec![vec![CharacterClass::Digit],],
+                vec![
+                    vec![CharacterClass::Digit, CharacterClass::Upper],
+                    vec![CharacterClass::Digit],
+                ],
+            ),);
+
+            assert!(satisfies_required(
+                vec![
+                    vec![CharacterClass::Custom(vec!['[', '#', '!', '*', '^', '%'])],
+                    vec![CharacterClass::Custom(vec!['[', '#', '!', '*'])],
+                ],
+                vec![vec![CharacterClass::Custom(vec!['[', '#', '!', '*'])],],
+            ),);
+
+            assert!(satisfies_required(
+                vec![vec![CharacterClass::Upper], vec![CharacterClass::Digit],],
+                vec![
+                    vec![
+                        CharacterClass::Digit,
+                        CharacterClass::Lower,
+                        CharacterClass::Upper
+                    ],
+                    vec![CharacterClass::Digit, CharacterClass::Lower],
+                ],
+            ),);
+        }
+    }
 
     mod canonicalize {
         use super::*;
