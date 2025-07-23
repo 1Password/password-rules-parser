@@ -177,6 +177,7 @@ enum PasswordRule {
 }
 
 impl PasswordRules {
+    /// Returns true if the rules of `self` satisfy all the rules of `other`.
     pub fn is_subset(&self, other: &PasswordRules) -> bool {
         if let Some(max_consecutive) = other.max_consecutive {
             if self.max_consecutive.map(|x| x <= max_consecutive) != Some(true) {
