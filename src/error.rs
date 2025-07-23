@@ -38,8 +38,8 @@ impl Display for Expected {
         match self {
             Expected::Eof => write!(f, "EoF"),
             Expected::Number => write!(f, "a number"),
-            Expected::Char(c) => write!(f, "{:?}", c),
-            Expected::Tag(tag) => write!(f, "{:?}", tag),
+            Expected::Char(c) => write!(f, "{c:?}"),
+            Expected::Tag(tag) => write!(f, "{tag:?}"),
         }
     }
 }
@@ -271,7 +271,7 @@ impl PasswordRulesError {
                             },
                         });
 
-                    write!(lint_string, "{}", lint)
+                    write!(lint_string, "{lint}")
                 })?;
 
                 lint_string
@@ -307,7 +307,7 @@ impl Display for PasswordRulesError {
                             (Last, exp) => write!(f, "or {}", exp.expected),
                         })?;
 
-                    writeln!(f, " at {}:{}", line, column)
+                    writeln!(f, " at {line}:{column}")
                 })
             }
         }
