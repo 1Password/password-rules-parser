@@ -38,8 +38,8 @@ impl Display for Expected {
         match self {
             Expected::Eof => write!(f, "EoF"),
             Expected::Number => write!(f, "a number"),
-            Expected::Char(c) => write!(f, "{:?}", c),
-            Expected::Tag(tag) => write!(f, "{:?}", tag),
+            Expected::Char(c) => write!(f, "{c:?}"),
+            Expected::Tag(tag) => write!(f, "{tag:?}"),
         }
     }
 }
@@ -241,7 +241,7 @@ impl PasswordRulesError {
             expectations => {
                 // Group the expectations by location, so that several expectations at the same
                 // location can be shown together
-                let groups = expectations.iter().group_by(|exp| (exp.line, exp.column));
+                let groups = expectations.iter().chunk_by(|exp| (exp.line, exp.column));
                 let mut lint_string = String::new();
 
                 groups.into_iter().try_for_each(|((line, column), group)| {
@@ -250,11 +250,11 @@ impl PasswordRulesError {
                     group
                         .with_position()
                         .try_for_each(|positioned_exp| match positioned_exp {
-                            Only(exp) => write!(inline_message, "{}", exp.expected),
-                            First(exp) | Middle(exp) => {
+                            (Only, exp) => write!(inline_message, "{}", exp.expected),
+                            (First, exp) | (Middle, exp) => {
                                 write!(inline_message, "{}, ", exp.expected)
                             }
-                            Last(exp) => write!(inline_message, "or {}", exp.expected),
+                            (Last, exp) => write!(inline_message, "or {}", exp.expected),
                         })?;
 
                     let lint = PrettyLint::error(s)
@@ -271,7 +271,7 @@ impl PasswordRulesError {
                             },
                         });
 
-                    write!(lint_string, "{}", lint)
+                    write!(lint_string, "{lint}")
                 })?;
 
                 lint_string
@@ -294,7 +294,7 @@ impl Display for PasswordRulesError {
                 // location can be shown together
                 writeln!(f, "expected one of:")?;
 
-                let groups = expectations.iter().group_by(|exp| (exp.line, exp.column));
+                let groups = expectations.iter().chunk_by(|exp| (exp.line, exp.column));
 
                 groups.into_iter().try_for_each(|((line, column), group)| {
                     write!(f, "  ")?;
@@ -302,12 +302,12 @@ impl Display for PasswordRulesError {
                     group
                         .with_position()
                         .try_for_each(|positioned_exp| match positioned_exp {
-                            Only(exp) => write!(f, "{}", exp.expected),
-                            First(exp) | Middle(exp) => write!(f, "{}, ", exp.expected),
-                            Last(exp) => write!(f, "or {}", exp.expected),
+                            (Only, exp) => write!(f, "{}", exp.expected),
+                            (First, exp) | (Middle, exp) => write!(f, "{}, ", exp.expected),
+                            (Last, exp) => write!(f, "or {}", exp.expected),
                         })?;
 
-                    writeln!(f, " at {}:{}", line, column)
+                    writeln!(f, " at {line}:{column}")
                 })
             }
         }
