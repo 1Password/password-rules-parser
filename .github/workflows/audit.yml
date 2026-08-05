@@ -8,11 +8,23 @@ on:
       - '**/Cargo.lock'
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   audit:
+    permissions:
+      checks: write  # for actions-rs/audit-check to create check
+      contents: read  # for actions/checkout to fetch code
+      issues: write  # for actions-rs/audit-check to create issues
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/audit-check@v1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
+      - uses: actions-rs/audit-check@35b7b53b1e25b55642157ac01b4adceb5b9ebef3 # v1.2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
