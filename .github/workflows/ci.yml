@@ -6,6 +6,9 @@ on:
 
 name: CI
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Check
@@ -17,12 +20,17 @@ jobs:
           # MSRV
           - 1.46.0
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
+      - uses: step-security/actions-rs-toolchain@40a2f87e50bed6faa2d050e99810b226b75d8c8a # v1.0.7
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
-      - uses: actions-rs/cargo@v1
+      - uses: step-security/actions-rs-cargo@34f23e8d4bb3618bc5485c3341f2bf88024fc4dc # v1.0.1
         with:
           command: check
 
@@ -30,12 +38,17 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
+      - uses: step-security/actions-rs-toolchain@40a2f87e50bed6faa2d050e99810b226b75d8c8a # v1.0.7
         with:
           profile: minimal
           toolchain: stable
-      - uses: actions-rs/cargo@v1
+      - uses: step-security/actions-rs-cargo@34f23e8d4bb3618bc5485c3341f2bf88024fc4dc # v1.0.1
         with:
           command: test
 
@@ -43,13 +56,18 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
+      - uses: step-security/actions-rs-toolchain@40a2f87e50bed6faa2d050e99810b226b75d8c8a # v1.0.7
         with:
           profile: minimal
           toolchain: stable
           components: rustfmt
-      - uses: actions-rs/cargo@v1
+      - uses: step-security/actions-rs-cargo@34f23e8d4bb3618bc5485c3341f2bf88024fc4dc # v1.0.1
         with:
           command: fmt
           args: --all -- --check
@@ -58,13 +76,18 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
+      - uses: step-security/actions-rs-toolchain@40a2f87e50bed6faa2d050e99810b226b75d8c8a # v1.0.7
         with:
           profile: minimal
           toolchain: stable
           components: clippy
-      - uses: actions-rs/cargo@v1
+      - uses: step-security/actions-rs-cargo@34f23e8d4bb3618bc5485c3341f2bf88024fc4dc # v1.0.1
         with:
           command: clippy
           args: -- -D clippy::dbg_macro -D warnings -D missing_docs -F unused_must_use
